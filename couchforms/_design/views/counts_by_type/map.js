@@ -5,7 +5,7 @@ function(doc) {
     if (doc["doc_type"] == "XFormInstance") {
         date = get_date(doc);
         if (!date) {
-            date = Date();
+            date = new Date();
         }
         emit([doc.xmlns, date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()], 1);
     } 

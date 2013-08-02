@@ -1,7 +1,6 @@
 
 function parse_date(date_string) {
     if (!date_string) return new Date(0); // 1970-01-01T00:00:00Z
-    // hat tip: http://stackoverflow.com/questions/2587345/javascript-date-parse    
 
     // We store all dates as ISO-8601, so the timezone is embedded in the string
     // and modern JS implementations understand this.

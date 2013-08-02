@@ -1,10 +1,15 @@
-// parse a date in yyyy-mm-dd format
+
 function parse_date(date_string) {
-    if (!date_string) return new Date(1970,1,1);
+    if (!date_string) return new Date(0); // 1970-01-01T00:00:00Z
     // hat tip: http://stackoverflow.com/questions/2587345/javascript-date-parse    
-    var parts = date_string.match(/(\d+)/g);
-    // new Date(year, month [, date [, hours[, minutes[, seconds[, ms]]]]])
-    return new Date(parts[0], parts[1]-1, parts[2]); // months are 0-based
+
+    // We store all dates as ISO-8601, so the timezone is embedded in the string
+    // and modern JS implementations understand this.
+    //
+    // Some of our older dates are in yyyy-mm-dd format and modern JS implementations
+    // assume this is in UTC time zone, which is also what we want.
+
+    return new Date(date_string)
 }
  
 function get_date(xform_doc) {

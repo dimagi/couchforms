@@ -1,4 +1,5 @@
 import os
+
 from datetime import date
 from django.conf import settings
 from django.test import TestCase
@@ -33,18 +34,18 @@ class TestMeta(TestCase):
             'deviceID': None,
             'clinic_id': u'5020280'
         })
-        
+
     def testDecimalAppVersion(self):
         '''
         Tests that an appVersion that looks like a decimal:
         (a) is not converted to a Decimal by couchdbkit
         (b) does not crash anything
         '''
-        
+
         file_path = os.path.join(os.path.dirname(__file__), "data", "decimalmeta.xml")
         xml_data = open(file_path, "rb").read()
-        doc_id, errors = post_authenticated_data(xml_data, 
-                                                 settings.XFORMS_POST_URL, 
+        doc_id, errors = post_authenticated_data(xml_data,
+                                                 settings.XFORMS_POST_URL,
                                                  settings.COUCH_USERNAME,
                                                  settings.COUCH_PASSWORD)
         xform = XFormInstance.get(doc_id)
@@ -61,4 +62,22 @@ class TestMeta(TestCase):
             'deviceID': None,
             'clinic_id': u'5020280',
         })
+
+    def testSurviveMissingDates(self):
+        file_path = os.path.join(os.path.dirname(__file__), "data", "no-dates.xml")
+        xml_data = open(file_path, "rb").read()
+        doc_id, errors = post_authenticated_data(xml_data,
+                                                 settings.XFORMS_POST_URL,
+                                                 settings.COUCH_USERNAME,
+                                                 settings.COUCH_PASSWORD)
+
+        xform = XFormInstance.get(doc_id)
+        xforms_by_xmlns = XFormInstance.view('couchforms/counts_by_type', startkey=[xform.xmlns], endkey=[xform.xmlns, {}], reduce=False)
+
+        vacuous = True
+        for row in xforms_by_xmlns:
+            if row['id'] == xform.get_id:
+                vacuous = False
+                self.assertEqual(row['key'][1:], [1970, 0, 1]) # Javascript months start at zero
+        self.assertFalse(vacuous) # Make sure we did actually test something
 

@@ -61,7 +61,7 @@ class TestMeta(TestCase):
             'deprecatedID': None,
             'deviceID': None,
             'clinic_id': u'5020280',
-            })
+        })
 
     def testSurviveMissingDates(self):
         file_path = os.path.join(os.path.dirname(__file__), "data", "no-dates.xml")

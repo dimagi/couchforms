@@ -55,6 +55,9 @@ class Metadata(DocumentSchema):
             <deviceID />
             <deprecatedID /> 
             <username />
+
+            <!-- CommCare extension -->
+            <appVersion />
         </Meta>
     
     See spec: https://bitbucket.org/javarosa/javarosa/wiki/OpenRosaMetaDataSchema
@@ -68,6 +71,7 @@ class Metadata(DocumentSchema):
     deviceID = StringProperty()
     deprecatedID = StringProperty()
     username = StringProperty()
+    appVersion = StringProperty()
 
 class XFormOperation(DocumentSchema):
     """
@@ -131,6 +135,12 @@ class XFormInstance(SafeSaveDocument, UnicodeMixIn, ComputedDocumentMixin):
                 # couchdbkit chokes on dates that aren't actually dates
                 # so check their validity before passing them up
                 ret = copy(dict(meta_block))
+
+                # couchdbkit erroneously converts appVersion to a Decimal just because it is possible (due to it being within a "dynamic" property)
+                # (see https://github.com/benoitc/couchdbkit/blob/a23343e539370cffcf8b0ce483c712911bb022c1/couchdbkit/schema/properties.py#L1038)
+                if meta_block.get('appVersion') is not None and not isinstance(meta_block['appVersion'], basestring):
+                    ret['appVersion'] = str(meta_block['appVersion'])
+
                 if meta_block:
                     for key in ("timeStart", "timeEnd"):
                         if key in meta_block:
@@ -151,7 +161,7 @@ class XFormInstance(SafeSaveDocument, UnicodeMixIn, ComputedDocumentMixin):
                                 "%s:%s" % (k, v) \
                                 for k, v in meta_block[key].items())
                 return ret
-            return Metadata(_clean(self._form[const.TAG_META]))
+            return Metadata(**_clean(self._form[const.TAG_META]))
         
         return None
 

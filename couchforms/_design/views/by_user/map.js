@@ -12,6 +12,9 @@ function(doc) {
         if (!date) {
             date = Date();
         }
+        // date.getUTCMonth returns a zero-indexed month
+        // This is absurdly counterintuitive, but your keys should look like this:
+        // startkey = [user_id, start.year, start.month - 1, start.day]
         emit([get_user_id(doc), date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), doc.xmlns], 1);
     } 
 }

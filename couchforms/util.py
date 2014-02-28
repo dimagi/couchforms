@@ -97,12 +97,6 @@ def create_xform_from_xml(xml_string, _id=None, process=None):
     _id = _id or _extract_meta_instance_id(json_form)
 
     kwargs = dict(
-        _attachments=resource.encode_attachments({
-            "form.xml": {
-                "content_type": "text/xml",
-                "data": xml_string,
-            },
-        }),
         form=json_form,
         xmlns=json_form.get('@xmlns'),
         received_on=datetime.datetime.utcnow(),
@@ -122,8 +116,9 @@ def create_xform_from_xml(xml_string, _id=None, process=None):
         xform = XFormInstance(**kwargs)
         raise
     finally:
-        xform.save(encode_attachments=False)
-
+        xform.save()
+        xform.put_attachment(xml_string, name='form.xml',
+                             content_type='text/xml')
     return xform.get_id
 
 

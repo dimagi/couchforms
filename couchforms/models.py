@@ -1,12 +1,13 @@
 from __future__ import absolute_import
 
-import datetime, hashlib, logging, time
+import datetime
+import hashlib
+import logging
 from copy import copy
 from lxml import etree
 from xml.etree import ElementTree
 
 from django.utils.datastructures import SortedDict
-from couchdbkit.exceptions import PreconditionFailed
 from couchdbkit.ext.django.schema import *
 from couchdbkit.resource import ResourceNotFound
 from dimagi.utils.couch import CouchDocLockableMixIn
@@ -14,13 +15,13 @@ from dimagi.utils.couch import CouchDocLockableMixIn
 from dimagi.utils.indicators import ComputedDocumentMixin
 from dimagi.utils.parsing import string_to_datetime
 from dimagi.utils.couch.safe_index import safe_index
-from dimagi.utils.couch.database import get_safe_read_kwargs, SafeSaveDocument
 from dimagi.utils.mixins import UnicodeMixIn
-from dimagi.utils.couch.database import get_db, iter_docs
+from dimagi.utils.couch.database import iter_docs
 
 from couchforms.signals import xform_archived, xform_unarchived
 from couchforms.const import ATTACHMENT_NAME
 from couchforms import const
+from sqlcouch.models import SQLDoc
 
 
 def doc_types():
@@ -89,7 +90,7 @@ class XFormOperation(DocumentSchema):
     operation = StringProperty()  # e.g. "archived", "unarchived"
 
 
-class XFormInstance(SafeSaveDocument, UnicodeMixIn, ComputedDocumentMixin,
+class XFormInstance(SQLDoc, UnicodeMixIn, ComputedDocumentMixin,
                     CouchDocLockableMixIn):
     """An XForms instance."""
     xmlns = StringProperty()
@@ -97,17 +98,6 @@ class XFormInstance(SafeSaveDocument, UnicodeMixIn, ComputedDocumentMixin,
     partial_submission = BooleanProperty(default=False) # Used to tag forms that were forcefully submitted without a touchforms session completing normally
     history = SchemaListProperty(XFormOperation)
     form = DictProperty()
-
-    @classmethod
-    def get(cls, docid, rev=None, db=None, dynamic_properties=True):
-        # copied and tweaked from the superclass's method
-        if not db:
-            db = cls.get_db()
-        cls._allow_dynamic_properties = dynamic_properties
-        # on cloudant don't get the doc back until all nodes agree
-        # on the copy, to avoid race conditions
-        extras = get_safe_read_kwargs()
-        return db.get(docid, rev=rev, wrapper=cls.wrap, **extras)
 
     @classmethod
     def get_forms_by_user(cls, user, start=None, end=None):
@@ -197,28 +187,9 @@ class XFormInstance(SafeSaveDocument, UnicodeMixIn, ComputedDocumentMixin,
     def __unicode__(self):
         return "%s (%s)" % (self.type, self.xmlns)
 
-    def save(self, **kwargs):
-        # HACK: cloudant has a race condition when saving newly created forms
-        # which throws errors here. use a try/retry loop here to get around
-        # it until we find something more stable.
-        RETRIES = 10
-        SLEEP = 0.5 # seconds
-        tries = 0
-        while True:
-            try:
-                return super(XFormInstance, self).save(**kwargs)
-            except PreconditionFailed:
-                if tries == 0:
-                    logging.error('doc %s got a precondition failed' % self._id)
-                if tries < RETRIES:
-                    tries += 1
-                    time.sleep(SLEEP)
-                else:
-                    raise
-
     def xpath(self, path):
         """
-        Evaluates an xpath expression like: path/to/node and returns the value 
+        Evaluates an xpath expression like: path/to/node and returns the value
         of that element, or None if there is no value.
         """
         return safe_index(self, path.split("/"))

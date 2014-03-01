@@ -23,6 +23,11 @@ class PostTest(TestCase):
             result['_rev'] = xform_json['_rev']
             if any_id_ok:
                 result['_id'] = xform_json['_id']
+            # colder than a witch's broomstick
+            if '_attachments':
+                for filename in result['_attachments']:
+                    result['_attachments'][filename].pop('digest', None)
+                    result['_attachments'][filename].pop('revpos', None)
             self.assertDictEqual(xform_json, result)
         except Exception:
             # to help when bootstrapping a new test case

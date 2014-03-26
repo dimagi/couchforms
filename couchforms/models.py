@@ -89,7 +89,7 @@ class XFormOperation(DocumentSchema):
     operation = StringProperty()  # e.g. "archived", "unarchived"
 
 
-class XFormInstance(SafeSaveDocument, UnicodeMixIn, ComputedDocumentMixin,
+class XFormInstance(Document, UnicodeMixIn, ComputedDocumentMixin,
                     CouchDocLockableMixIn):
     """An XForms instance."""
     xmlns = StringProperty()
